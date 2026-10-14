@@ -203,7 +203,7 @@ public class TermuxTerminalViewClient extends TermuxTerminalViewClientBase {
 
         if (!term.isMouseTrackingActive() && !e.isFromSource(InputDevice.SOURCE_MOUSE)) {
             if (!KeyboardUtils.areDisableSoftKeyboardFlagsSet(mActivity))
-                KeyboardUtils.showSoftKeyboard(mActivity, mActivity.getTerminalView());
+                showSoftKeyboardOnTap();
             else
                 Logger.logVerbose(LOG_TAG, "Not showing soft keyboard onSingleTapUp since its disabled");
         }
@@ -714,6 +714,28 @@ public class TermuxTerminalViewClient extends TermuxTerminalViewClientBase {
             mActivity.getTerminalView().requestFocus();
             mActivity.getTerminalView().postDelayed(getShowSoftKeyboardRunnable(), 300);
         }
+    }
+
+    /**
+     * NewTermux: bring the keyboard back when the terminal is tapped after it was minimized (back
+     * press / swipe down). A plain showSoftInput() is silently ignored on some IMEs once they have
+     * hidden themselves while the view kept focus, so clear any "always hidden" window state and
+     * fall back to restarting the input connection if the keyboard still isn't visible.
+     */
+    private void showSoftKeyboardOnTap() {
+        final View terminalView = mActivity.getTerminalView();
+        KeyboardUtils.setSoftInputModeAdjustResize(mActivity);
+        KeyboardUtils.showSoftKeyboard(mActivity, terminalView);
+
+        terminalView.postDelayed(() -> {
+            if (KeyboardUtils.areDisableSoftKeyboardFlagsSet(mActivity)) return;
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M &&
+                KeyboardUtils.isSoftKeyboardVisible(mActivity)) return;
+            android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
+                mActivity.getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.restartInput(terminalView);
+            KeyboardUtils.showSoftKeyboard(mActivity, terminalView);
+        }, 150);
     }
 
     private Runnable getShowSoftKeyboardRunnable() {

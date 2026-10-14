@@ -340,8 +340,9 @@ public final class TerminalView extends View {
                     // NewTermux: keyboard suggestion strip + autocorrect, like a text field.
                     outAttrs.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_AUTO_CORRECT;
                 } else {
-                    // Original raw input — no keyboard suggestions.
-                    outAttrs.inputType = InputType.TYPE_NULL;
+                    // Plain text field with suggestions suppressed. TYPE_NULL makes Gboard
+                    // disable gesture (glide) typing entirely.
+                    outAttrs.inputType = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS;
                 }
             }
         } else {
